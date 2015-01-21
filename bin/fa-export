@@ -1,0 +1,100 @@
+#! /usr/bin/env ruby
+#
+# @abstract Poor Man's version of a FlightAware client
+#
+# @author Ollivier Robert <ollivier.robert@eurocontrol.int>
+# @copyright 2015 by Ollivier Robert for ECTL
+#
+
+BASEDIR = File.dirname(File.expand_path($0))
+$LOAD_PATH << File.join(BASEDIR, '..', 'lib')
+
+require 'flightaware/client'
+
+# Standard modules
+require 'openssl'
+require 'yaml'
+
+# External modules
+require 'eventmachine'
+
+# Default config file
+DEF_CONFIG = File.join(ENV['HOME'], '.flightaware', 'config.yml')
+
+# Small class to avoid putting
+class MyConfig
+  attr_reader :user, :password, :site, :port
+
+  def initialize(path)
+    cfg = {}
+    if File.exist?(path)
+      File.open(path) do |fh|
+        cfg = YAML.load(fh)
+      end
+    else
+      raise "File not present: #{path}"
+    end
+    @user = cfg['user']
+    @password = cfg['password']
+    @site = cfg['site']
+    @port = cfg['port']
+  end
+
+  def self.load(path = DEF_CONFIG)
+    MyConfig::new(path)
+  end
+end
+
+module FlightAware
+  class Client < EventMachine::Connection
+    def post_init
+      sleep(1)
+      puts("  Initiating TLS negociation")
+      start_tls(:verify_peer => false)
+      unless error?
+        sleep(1)
+        puts("  Authenticating to FlightAware")
+        send_data "live version 4.0 username #{$config.user} password #{$config.password} events \"position\"\n"
+        puts("  Init done.")
+      else
+        puts("Error.")
+      end
+      sleep(100)
+    end
+
+    def ssl_handshake_completed
+      sleep(1)
+      puts(get_peer_cert)
+      $server_handshake_completed = true
+      puts("End of SSL handshake")
+    end
+
+    def connection_completed
+      puts("Connection is open.")
+      puts(self)
+    end
+
+    def receive_data(data)
+      p data
+    end
+
+    def unbind
+      puts(" We are finished")
+      EventMachine::stop_event_loop
+    end
+  end
+end
+
+def main(argv)
+  $config = MyConfig.load
+
+  puts("Connecting to #{$config.site}:#{$config.port} using TLS.")
+  EventMachine.run {
+    EventMachine::connect $config.site, $config.port.to_i, FlightAware::Client
+  }
+  0
+end
+
+if __FILE__ == $0
+  exit(main(ARGV) || 1)
+end
