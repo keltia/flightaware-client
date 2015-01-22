@@ -18,7 +18,7 @@ require 'openssl'
 require 'yaml'
 
 # External modules
-require 'eventmachine'
+require 'celluloid/io'
 
 # Default config file
 DEF_CONFIG = File.join(ENV['HOME'], '.flightaware', 'config.yml')
@@ -48,53 +48,38 @@ class MyConfig
 end
 
 module FlightAware
-  class Client < EventMachine::Connection
-    def post_init
+  class Client
+    include Celluloid::IO
+
+    def initialize(config)
+      puts("Connecting to #{config.site}:#{config.port} using TLS.")
       sleep(1)
       puts("  Initiating TLS negociation")
-      start_tls(:verify_peer => false)
-      unless error?
-        sleep(1)
-        puts("  Authenticating to FlightAware")
-        send_data "live version 4.0 username #{$config.user} password #{$config.password} events \"position\"\n"
-        puts("  Init done.")
-      else
-        puts("Error.")
-      end
-      sleep(100)
+      raw_socket = TCPSocket.new(config.site, config.port)
+      @ssl = SSLSocket.new(raw_socket)
+      @ssl.connect
+      p @ssl
+      puts("  Authenticating to FlightAware")
+      @ssl.write("live version 4.0 username #{config.user} password #{config.password} events \"position\"\n")
+      puts("  Init done.")
+      async.run
     end
 
-    def ssl_handshake_completed
+    def run
+      puts @ssl.read
+    end
+
+    def wait
       sleep(1)
-      puts(get_peer_cert)
-      $server_handshake_completed = true
-      puts("End of SSL handshake")
-    end
-
-    def connection_completed
-      puts("Connection is open.")
-      puts(self)
-    end
-
-    def receive_data(data)
-      p data
-    end
-
-    def unbind
-      puts(" We are finished")
-      EventMachine::stop_event_loop
     end
   end
 end
 
 def main(argv)
-  $config = MyConfig.load
+  config = MyConfig.load
 
-  puts("Connecting to #{$config.site}:#{$config.port} using TLS.")
-  EventMachine.run {
-    EventMachine::connect $config.site, $config.port.to_i, FlightAware::Client
-  }
-  0
+  fa = FlightAware::Client.new(config)
+  loop { fa.wait }
 end
 
 if __FILE__ == $0
