@@ -6,9 +6,11 @@
 # @copyright 2015 by Ollivier Robert for ECTL
 #
 
+# Usual housekeeping variables
 BASEDIR = File.dirname(File.expand_path($0))
 $LOAD_PATH << File.join(BASEDIR, '..', 'lib')
 
+# Setup things
 require 'flightaware/client'
 
 # Standard modules
@@ -21,7 +23,7 @@ require 'eventmachine'
 # Default config file
 DEF_CONFIG = File.join(ENV['HOME'], '.flightaware', 'config.yml')
 
-# Small class to avoid putting
+# Small class to avoid putting login/pwd info
 class MyConfig
   attr_reader :user, :password, :site, :port
 
