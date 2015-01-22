@@ -47,26 +47,30 @@ class MyConfig
   end
 end
 
+trap(:INT) { puts("INT: stopping..."); exit(0) }
+trap(:TERM) { puts("TERM: stopping..."); exit(0) }
+
 module FlightAware
   class Client
     include Celluloid::IO
 
     def initialize(config)
       puts("Connecting to #{config.site}:#{config.port} using TLS.")
-      sleep(1)
-      puts("  Initiating TLS negociation")
       raw_socket = TCPSocket.new(config.site, config.port)
+      puts("  Initiating TLS negociation")
       @ssl = SSLSocket.new(raw_socket)
       @ssl.connect
-      p @ssl
       puts("  Authenticating to FlightAware")
       @ssl.write("live version 4.0 username #{config.user} password #{config.password} events \"position\"\n")
-      puts("  Init done.")
+      puts("Init done.")
       async.run
     end
 
+    # Read buffer, one line at a time
+    #
     def run
-      puts @ssl.read
+      buf = @ssl.read
+      puts(buf)
     end
 
     def wait
@@ -79,7 +83,7 @@ def main(argv)
   config = MyConfig.load
 
   fa = FlightAware::Client.new(config)
-  loop { fa.wait }
+  loop { fa.run }
 end
 
 if __FILE__ == $0
