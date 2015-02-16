@@ -29,11 +29,11 @@ def main(argv)
 
   fa = FlightAware::Client.new(config)
   loop {
-    fa.run
     if @sigint or @sigterm
       $stderr.puts("#{fa.pkts} packets received, #{fa.bytes} bytes.")
       break
     end
+    fa.run
   }
 end
 
