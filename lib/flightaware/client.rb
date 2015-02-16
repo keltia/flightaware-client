@@ -1,2 +1,2 @@
 require 'flightaware/client/version'
-require 'client/client'
+require 'flightaware/client/client'
