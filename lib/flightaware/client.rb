@@ -1,4 +1,2 @@
-require "flightaware/client/version"
-
-module Flightaware
-end
+require 'flightaware/client/version'
+require 'client/client'
