@@ -24,8 +24,8 @@ require 'config'
 # Default config file
 DEF_CONFIG = File.join(ENV['HOME'], '.flightaware', 'config.yml')
 
-trap(:INT) { puts("INT: stopping..."); @sigint = 1 }
-trap(:TERM) { puts("TERM: stopping..."); @sigterm = 1 }
+trap(:INT) { $stderr.puts("INT: stopping..."); @sigint = 1 }
+trap(:TERM) { $stderr.puts("TERM: stopping..."); @sigterm = 1 }
 
 def main(argv)
   config = MyConfig.load
@@ -34,7 +34,7 @@ def main(argv)
   loop {
     fa.run
     if @sigint or @sigterm
-      puts("#{fa.pkts} packets received, #{fa.bytes} bytes.")
+      $stderr.puts("#{fa.pkts} packets received, #{fa.bytes} bytes.")
       break
     end
   }
