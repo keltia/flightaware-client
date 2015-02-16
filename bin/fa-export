@@ -14,9 +14,6 @@ $LOAD_PATH << File.join(BASEDIR, '..', 'lib')
 require 'openssl'
 require 'yaml'
 
-# External modules
-require 'celluloid/io'
-
 # Setup things
 require 'flightaware/client'
 require 'config'
