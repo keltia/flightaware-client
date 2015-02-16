@@ -25,7 +25,7 @@ trap(:INT) { $stderr.puts("INT: stopping..."); @sigint = 1 }
 trap(:TERM) { $stderr.puts("TERM: stopping..."); @sigterm = 1 }
 
 def main(argv)
-  config = MyConfig.load
+  config = MyConfig.load(DEF_CONFIG)
 
   fa = FlightAware::Client.new(config)
   loop {
