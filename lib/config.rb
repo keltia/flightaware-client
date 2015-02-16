@@ -3,6 +3,9 @@
 # @author Ollivier Robert <ollivier.robert@eurocontrol.int>
 # @copyright 2015 by Ollivier Robert for ECTL
 
+# Standard modules
+require 'yaml'
+
 # Small class to avoid putting login/pwd info
 class MyConfig
   attr_reader :user, :password, :site, :port

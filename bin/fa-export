@@ -12,7 +12,6 @@ $LOAD_PATH << File.join(BASEDIR, '..', 'lib')
 
 # Standard modules
 require 'openssl'
-require 'yaml'
 
 # Setup things
 require 'flightaware/client'
