@@ -24,14 +24,20 @@ require 'config'
 # Default config file
 DEF_CONFIG = File.join(ENV['HOME'], '.flightaware', 'config.yml')
 
-trap(:INT) { puts("INT: stopping..."); exit(0) }
-trap(:TERM) { puts("TERM: stopping..."); exit(0) }
+trap(:INT) { puts("INT: stopping..."); @sigint = 1 }
+trap(:TERM) { puts("TERM: stopping..."); @sigterm = 1 }
 
 def main(argv)
   config = MyConfig.load
 
   fa = FlightAware::Client.new(config)
-  loop { fa.run }
+  loop {
+    fa.run
+    if @sigint or @sigterm
+      puts("#{fa.pkts} packets received, #{fa.bytes} bytes.")
+      break
+    end
+  }
 end
 
 if __FILE__ == $0
