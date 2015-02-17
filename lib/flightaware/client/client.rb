@@ -5,8 +5,6 @@
 
 # External modules
 require 'celluloid/io'
-# Qpid link
-require 'qpid_proton'
 
 # Main module
 module FlightAware
@@ -16,9 +14,11 @@ module FlightAware
     attr_reader :bytes
     attr_reader :pkts
 
-    def initialize(config)
+    def initialize(config, out = nil)
       @bytes = 0
       @pkts = 0
+      @out = out || Proc.new{|buf| $stderr.puts(buf) }
+
       puts("Connecting to #{config.site}:#{config.port} using TLS.")
       raw_socket = TCPSocket.new(config.site, config.port)
       puts("  Initiating TLS negociation")
@@ -32,9 +32,9 @@ module FlightAware
 
     # Read buffer, one line at a time
     #@param [Proc] out callback to do something with the packet
-    def run(out)
+    def run
       buf = @ssl.read
-      out.call(buf)
+      @out.call(buf)
       @bytes += buf.size
       @pkts += 1
     end
