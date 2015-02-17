@@ -17,16 +17,16 @@ module FlightAware
     def initialize(config, out = nil)
       @bytes = 0
       @pkts = 0
-      @out = out || Proc.new{|buf| $stderr.puts(buf) }
+      @out = out || Proc.new{|buf| $stdout.puts(buf) }
 
-      puts("Connecting to #{config.site}:#{config.port} using TLS.")
+      $stderr.puts("Connecting to #{config.site}:#{config.port} using TLS.")
       raw_socket = TCPSocket.new(config.site, config.port)
-      puts("  Initiating TLS negociation")
+      $stderr.puts("  Initiating TLS negociation")
       @ssl = SSLSocket.new(raw_socket)
       @ssl.connect
-      puts("  Authenticating to FlightAware")
+      $stderr.puts("  Authenticating to FlightAware")
       @ssl.write("live version 4.0 username #{config.user} password #{config.password} events \"position\"\n")
-      puts("Init done.")
+      $stderr.puts("Init done.")
       async.run
     end
 
