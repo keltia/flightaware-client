@@ -17,13 +17,16 @@ require 'openssl'
 require 'flightaware/client'
 require 'config'
 
+# Qpid link
+require 'qpid_proton'
+
 # Default config file
 DEF_CONFIG = File.join(ENV['HOME'], '.flightaware', 'config.yml')
 
 trap(:INT) { $stderr.puts("INT: stopping..."); @sigint = 1 }
 trap(:TERM) { $stderr.puts("TERM: stopping..."); @sigterm = 1 }
 
-feed_one = Proc.new {|buf|
+@feed_one = Proc.new {|buf|
   msg = Qpid::Proton::Message.new
   msg.address = @topic
   msg['sent'] = Time.now.to_s
@@ -46,8 +49,8 @@ end
 def main(argv)
   config = MyConfig.load(DEF_CONFIG)
 
-  fa = FlightAware::Client.new(config)
   setup_amqp(config)
+  fa = FlightAware::Client.new(config, @feed_one)
   loop {
     if @sigint or @sigterm
       $stderr.puts("#{fa.pkts} packets received, #{fa.bytes} bytes.")
