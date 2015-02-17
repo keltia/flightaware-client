@@ -1,0 +1,62 @@
+#! /usr/bin/env ruby
+#
+# @abstract Poor Man's version of a FlightAware client
+#
+# @author Ollivier Robert <ollivier.robert@eurocontrol.int>
+# @copyright 2015 by Ollivier Robert for ECTL
+#
+
+# Usual housekeeping variables
+BASEDIR = File.dirname(File.expand_path($0))
+$LOAD_PATH << File.join(BASEDIR, '..', 'lib')
+
+# Standard modules
+require 'openssl'
+
+# Setup things
+require 'flightaware/client'
+require 'config'
+
+# Default config file
+DEF_CONFIG = File.join(ENV['HOME'], '.flightaware', 'config.yml')
+
+trap(:INT) { $stderr.puts("INT: stopping..."); @sigint = 1 }
+trap(:TERM) { $stderr.puts("TERM: stopping..."); @sigterm = 1 }
+
+feed_one = Proc.new {|buf|
+  msg = Qpid::Proton::Message.new
+  msg.address = @topic
+  msg['sent'] = Time.now.to_s
+  msg['subject'] = "FA pkt##{@pkts}"
+  msg.body = buf
+  @amqp.put(msg)
+}
+
+# Setup AMQP
+def setup_amqp(config)
+  if config.topic
+    @topic = "amqp://#{config.broker}/#{config.topic}"
+    puts("Creating AMQP writing queue #{@topic}")
+    @amqp = Qpid::Proton::Messenger.new
+    @amqp.start
+  end
+end
+
+# Do something
+def main(argv)
+  config = MyConfig.load(DEF_CONFIG)
+
+  fa = FlightAware::Client.new(config)
+  setup_amqp(config)
+  loop {
+    if @sigint or @sigterm
+      $stderr.puts("#{fa.pkts} packets received, #{fa.bytes} bytes.")
+      break
+    end
+    fa.run(feed_one)
+  }
+end
+
+if __FILE__ == $0
+  exit(main(ARGV) || 1)
+end

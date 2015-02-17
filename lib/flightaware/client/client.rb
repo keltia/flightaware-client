@@ -5,6 +5,8 @@
 
 # External modules
 require 'celluloid/io'
+# Qpid link
+require 'qpid_proton'
 
 # Main module
 module FlightAware
@@ -29,10 +31,10 @@ module FlightAware
     end
 
     # Read buffer, one line at a time
-    #
-    def run
+    #@param [Proc] out callback to do something with the packet
+    def run(out)
       buf = @ssl.read
-      puts(buf)
+      out.call(buf)
       @bytes += buf.size
       @pkts += 1
     end
