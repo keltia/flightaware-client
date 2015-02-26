@@ -18,10 +18,10 @@ module FlightAware
     attr_reader :bytes
     attr_reader :pkts
 
-    def initialize(config, out = nil)
+    def initialize(config)
       @bytes = 0
       @pkts = 0
-      @out = out || Proc.new{|buf| $stdout.puts(buf) }
+      @out = config.feed_one
 
       $stderr.puts("Connecting to #{config.site}:#{config.port} using TLS.")
       raw_socket = TCPSocket.new(config.site, config.port)
