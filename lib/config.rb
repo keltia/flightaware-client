@@ -8,7 +8,8 @@ require 'yaml'
 
 # Small class to avoid putting login/pwd info
 class MyConfig
-  attr_reader :user, :password, :site, :port, :broker, :topic
+  attr_reader :user, :password, :site, :port, :broker, :topic, :type
+  attr_accessor :feed_one
 
   def initialize(path)
     cfg = {}
@@ -24,6 +25,8 @@ class MyConfig
     @site = cfg['site']
     @port = cfg['port']
     @topic = cfg['topic']
+    @type = cfg['type']
+    @feed_one = Proc.new{|buf| $stdout.puts(buf) }
     if @topic
       if cfg['broker'].nil?
         raise StandardError, 'broken can\'t be null'
