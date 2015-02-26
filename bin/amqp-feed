@@ -26,15 +26,6 @@ DEF_CONFIG = File.join(ENV['HOME'], '.flightaware', 'config.yml')
 trap(:INT) { $stderr.puts("INT: stopping..."); @sigint = 1 }
 trap(:TERM) { $stderr.puts("TERM: stopping..."); @sigterm = 1 }
 
-@feed_one = Proc.new {|buf|
-  msg = Qpid::Proton::Message.new
-  msg.address = @topic
-  msg['sent'] = Time.now.to_s
-  msg['subject'] = "FA pkt##{@pkts}"
-  msg.body = buf
-  @amqp.put(msg)
-}
-
 # Setup AMQP
 def setup_amqp(config)
   if config.topic
@@ -49,14 +40,37 @@ end
 def main(argv)
   config = MyConfig.load(DEF_CONFIG)
 
-  setup_amqp(config)
-  fa = FlightAware::Client.new(config, @feed_one)
+  amqp, topic = setup_amqp(config)
+  msg = Qpid::Proton::Message.new
+  #  Our callback to receive from FA and push to AMQP
+  #
+  feed_one = Proc.new {|buf|
+    msg.creation_time = Time.now.to_i
+    msg.content_type = 'application/json'
+    msg.format = Qpid::Proton::MessageFormat::JSON
+    msg['sent'] = Time.now.to_s
+
+    msg.address = topic
+    msg.subject = "FA pkt##{@pkts}"
+    msg.body = buf
+    begin
+      amqp.put(msg)
+      amqp.send
+    rescue Qpid::Proton::ProtonError => error
+      $stderr.puts("ERROR: #{error.message}")
+      exit
+    end
+    $stderr.print(".")
+  }
+
+  config.feed_one = feed_one
+  fa = FlightAware::Client.new(config)
   loop {
     if @sigint or @sigterm
       $stderr.puts("#{fa.pkts} packets received, #{fa.bytes} bytes.")
       break
     end
-    fa.run(feed_one)
+    fa.run
   }
 end
 
