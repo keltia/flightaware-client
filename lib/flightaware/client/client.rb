@@ -25,9 +25,14 @@ module FlightAware
 
       $stderr.puts("Connecting to #{config.site}:#{config.port} using TLS.")
       raw_socket = TCPSocket.new(config.site, config.port)
-      $stderr.puts("  Initiating TLS negociation")
-      @ssl = SSLSocket.new(raw_socket)
-      @ssl.connect
+      begin
+        $stderr.puts("  Initiating TLS negociation")
+        @ssl = SSLSocket.new(raw_socket)
+        @ssl.connect
+      rescue => message
+        raise TLSError, "TLS negociation failed: #{message}"
+      end
+
       $stderr.puts("  Authenticating to FlightAware")
       @ssl.write("live version 4.0 username #{config.user} password #{config.password} events \"position\"\n")
       $stderr.puts("Init done.")
