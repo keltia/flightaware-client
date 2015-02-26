@@ -8,7 +8,8 @@ require 'yaml'
 
 # Small class to avoid putting login/pwd info
 class MyConfig
-  attr_reader :user, :password, :site, :port, :broker, :topic, :type
+  attr_reader :user, :password, :site, :port
+  attr_accessor :broker, :topic, :type
   attr_accessor :feed_one
 
   def initialize(path)
