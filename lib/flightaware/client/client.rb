@@ -6,6 +6,10 @@
 # External modules
 require 'celluloid/io'
 
+# TLS negociation error
+class TLSError < Exception
+end
+
 # Main module
 module FlightAware
   class Client
