@@ -31,7 +31,7 @@ module FlightAware
     end
 
     # Read buffer, one line at a time
-    #@param [Proc] out callback to do something with the packet
+    #
     def run
       buf = @ssl.read
       @out.call(buf)
