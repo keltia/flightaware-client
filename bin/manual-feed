@@ -1,0 +1,84 @@
+#! /usr/bin/env ruby
+#
+# @abstract Manually inject JSON record into AMQP
+#
+# @author Ollivier Robert <ollivier.robert@eurocontrol.int>
+# @copyright 2015 by Ollivier Robert for ECTL
+#
+
+# Usual housekeeping variables
+BASEDIR = File.dirname(File.expand_path($0))
+$LOAD_PATH << File.join(BASEDIR, '..', 'lib')
+
+# Standard modules
+require 'openssl'
+
+# Setup things
+require 'config'
+
+# Qpid link
+require 'qpid_proton'
+
+# Default config file
+DEF_CONFIG = File.join(ENV['HOME'], '.flightaware', 'config.yml')
+
+trap(:INT) { $stderr.puts("INT: stopping..."); @sigint = 1 }
+trap(:TERM) { $stderr.puts("TERM: stopping..."); @sigterm = 1 }
+
+# Setup AMQP
+def setup_amqp(config)
+  if config.topic
+    topic = "#{config.type}://#{config.broker}/#{config.topic}"
+    puts("Creating AMQP writing queue #{topic}")
+    amqp = Qpid::Proton::Messenger.new
+    amqp.start
+    return amqp, topic
+  end
+end
+
+# Do something
+def main(argv)
+  pkts = 0
+  config = MyConfig.load(DEF_CONFIG)
+
+  fn = argv.shift
+  $stderr.puts("Reading from #{fn}")
+  all = File.open(fn, "r").readlines
+  $stderr.puts("  Read #{all.size} records")
+
+  amqp, topic = setup_amqp(config)
+
+  # One instance is enough
+  #
+  msg = Qpid::Proton::Message.new
+  me = %x{hostname}
+
+  # Generate and send
+  #
+  all.each do |line|
+    msg.address = topic
+    msg.subject = "FA pkt##{pkts}"
+    msg.creation_time = Time.now.to_i
+    msg.content_type = 'application/json'
+    msg.format = Qpid::Proton::MessageFormat::JSON
+    msg['sent'] = Time.now.to_s
+    msg['hostname'] = me
+    msg.body = line.chomp.dup
+    begin
+      amqp.put(msg)
+      pkts += 1
+    rescue Qpid::Proton::ProtonError => error
+      $stderr.puts("ERROR: #{error.message}")
+      exit
+    end
+    $stderr.print(".")
+  end
+
+  # Flush queue
+  amqp.send
+  0
+end
+
+if __FILE__ == $0
+  exit(main(ARGV) || 1)
+end
