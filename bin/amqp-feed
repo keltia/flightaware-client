@@ -82,7 +82,7 @@ Default is first configuration in #{DEF_CONFIG}
   amqp, topic = setup_amqp(config, def_dest)
 
   msg = Qpid::Proton::Message.new
-  
+
   #  Our callback to receive from FA and push to AMQP
   #
   feed_one = Proc.new {|buf|
