@@ -29,10 +29,11 @@ trap(:TERM) { $stderr.puts("TERM: stopping..."); @sigterm = 1 }
 # Setup AMQP
 def setup_amqp(config)
   if config.topic
-    @topic = "amqp://#{config.broker}/#{config.topic}"
-    puts("Creating AMQP writing queue #{@topic}")
-    @amqp = Qpid::Proton::Messenger.new
-    @amqp.start
+    topic = "#{config.type}://#{config.broker}/#{config.topic}"
+    puts("Creating AMQP writing queue #{topic}")
+    amqp = Qpid::Proton::Messenger.new
+    amqp.start
+    return amqp, topic
   end
 end
 
