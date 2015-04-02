@@ -12,6 +12,7 @@ $LOAD_PATH << File.join(BASEDIR, '..', 'lib')
 
 # Standard modules
 require 'openssl'
+require 'optparse'
 
 # Setup things
 require 'config'
@@ -26,9 +27,10 @@ trap(:INT) { $stderr.puts("INT: stopping..."); @sigint = 1 }
 trap(:TERM) { $stderr.puts("TERM: stopping..."); @sigterm = 1 }
 
 # Setup AMQP
-def setup_amqp(config)
-  if config.topic
-    topic = "#{config.type}://#{config.broker}/#{config.topic}"
+def setup_amqp(config, dest)
+  dst = config.dests[dest] || config.dests[config.default]
+  if dst
+    topic = "#{dst['type']}://#{dst['broker']}/#{dst['name']}"
     puts("Creating AMQP writing queue #{topic}")
     amqp = Qpid::Proton::Messenger.new
     amqp.start
@@ -38,15 +40,65 @@ end
 
 # Do something
 def main(argv)
+  # Default dest
+  def_dest = nil
+
+  # File to read from
+  read_from = nil
+
   pkts = 0
   config = MyConfig.load(DEF_CONFIG)
 
-  fn = argv.shift
-  $stderr.puts("Reading from #{fn}")
-  all = File.open(fn, "r").readlines
+  usage = <<-"EOTEXT"
+Usage: #{MYNAME} [-C config] file
+
+Default is first configuration in #{DEF_CONFIG}
+  EOTEXT
+
+  banner = <<-"EOTEXT"
+#{MYNAME}
+
+#{usage}
+  EOTEXT
+
+  argv.options do |opts|
+    opts.banner = banner
+
+    opts.on('-C', '--config=NAME', 'Load this particular destination.') do
+    |opt_dest|
+      def_dest = opt_dest
+    end
+
+    opts.on('-h', '--help', 'This help message.') do
+      puts opts.help
+      puts("\nPossible destinations:")
+      puts("%-10s %-40s" % ["Name", "Destination"])
+      puts("%-10s %-40s" % ["----------", "---------------------------------------------"])
+      config.dests.each{|n,v|
+        puts("%-10s %-40s" % [ n, "#{v['type']}://#{v['broker']}/#{v['name']}" ])
+      }
+      return 255
+    end
+    opts.parse!
+  end
+
+  argv.options = nil
+  read_from = argv.shift
+
+  if read_from.nil?
+    $stderr.puts("Error: you must specify a file to read from!")
+    return 255
+  end
+
+  $stderr.puts("Reading from #{read_from}")
+  if read_from == '-'
+    all = $stdin.readlines
+  else
+    all = File.open(read_from, "r").readlines
+  end
   $stderr.puts("  Read #{all.size} records")
 
-  amqp, topic = setup_amqp(config)
+  amqp, topic = setup_amqp(config, def_dest)
 
   # One instance is enough
   #
