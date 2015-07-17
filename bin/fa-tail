@@ -1,0 +1,17 @@
+#! /usr/bin/env ruby
+
+require 'oj'
+
+def main(argv)
+  File.open(argv[0]) do |fh|
+    str = fh.readlines
+    lastR = Oj.load(str[-1])
+    lastT = Time.at(lastR["clock"].to_i)
+    puts(lastT) 
+  end
+  0
+end
+
+if __FILE__ == $0
+  exit(main(ARGV) || 1)
+end
