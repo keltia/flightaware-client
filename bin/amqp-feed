@@ -47,7 +47,7 @@ def main(argv)
   config = MyConfig.load(DEF_CONFIG)
 
   usage = <<-"EOTEXT"
-Usage: #{MYNAME} [-C config]
+Usage: #{MYNAME} [-f FILE] [-C config]
 
 Default is first configuration in #{DEF_CONFIG}
   EOTEXT
@@ -60,6 +60,11 @@ Default is first configuration in #{DEF_CONFIG}
 
   argv.options do |opts|
     opts.banner = banner
+
+    opts.on('-f', '--from=FILE', 'Read JSON data from FILE, not direct feed.') do
+      |opt_file|
+      read_from = opt_file
+    end
 
     opts.on('-C', '--config=NAME', 'Load this particular destination.') do
       |opt_dest|
