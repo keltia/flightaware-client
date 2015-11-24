@@ -33,8 +33,10 @@ module FlightAware
         raise TLSError, "TLS negociation failed: #{message}"
       end
 
+      user = config.users[config.def_user]["user"]
+      password = config.users[config.def_user]["password"]
       $stderr.puts("  Authenticating to FlightAware")
-      @ssl.write("live version 4.0 username #{config.user} password #{config.password} events \"position\"\n")
+      @ssl.write("live version 4.0 username #{user} password #{config.password} events \"position\"\n")
       $stderr.puts("Init done.")
       async.run
     end

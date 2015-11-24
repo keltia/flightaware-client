@@ -18,22 +18,28 @@
 #   - type    queue|topic
 
 # Standard modules
-require 'yaml'
+require 'toml'
 
 # Small class to avoid putting login/pwd info
 class MyConfig
-  attr_accessor :user, :password, :site, :port
-  attr_accessor :dests, :default
-  attr_accessor :feed_one
+  attr_accessor :users, :password, :site, :port
+  attr_accessor :dests, :default, :def_user
+  attr_accessor :feed_one, :def_dest
+
+  def check_name(str)
+    if str !~ %r{\.toml$}
+      return File.join(ENV["HOME"], str, "config.toml")
+    end
+    str
+  end
 
   def initialize(path)
     cfg = {}
-    if File.exist?(path)
-      File.open(path) do |fh|
-        cfg = YAML.load(fh)
-      end
+    r_path = check_name(path)
+    if File.exist?(r_path)
+      cfg = TOML.load_file(r_path)
     else
-      raise "File not present: #{path}"
+      raise "File not present: #{r_path}"
     end
     cfg.each do |k, v|
       self.send("#{k}=", v)
