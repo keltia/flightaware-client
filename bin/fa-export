@@ -18,7 +18,7 @@ require 'flightaware/client'
 require 'config'
 
 # Default config file
-DEF_CONFIG = File.join(ENV['HOME'], '.flightaware', 'config.yml')
+DEF_CONFIG = '.flightaware'
 
 trap(:INT) { $stderr.puts("INT: stopping..."); @sigint = 1 }
 trap(:TERM) { $stderr.puts("TERM: stopping..."); @sigterm = 1 }
